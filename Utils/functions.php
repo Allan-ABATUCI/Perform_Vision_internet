@@ -1,5 +1,9 @@
 <?php
 
+function sanitizeInput($input)
+{
+    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+}
 
 /**
  * Fonction échappant les caractères html dans $message
@@ -44,20 +48,23 @@ Ajouter les fonctions pour le chiffrement RSA
 */
 
 //Chiffrer et déchiffrer à l'aide de bibliothèque Openssl 
-function encryptWithPublicKey($str) {
+function encryptWithPublicKey($str)
+{
     $publicKey = openssl_pkey_get_public(file_get_contents("key.public"));
     openssl_public_encrypt($str, $crypted, $publicKey);
     return base64_encode($crypted);
 }
 
-function decryptWithPrivateKey($str) {
+function decryptWithPrivateKey($str)
+{
     $privateKey = openssl_pkey_get_private(file_get_contents("key.private"));
     openssl_private_decrypt(base64_decode($str), $decrypted, $privateKey);
     return $decrypted;
 }
 
 //Chiffrer et déchiffrer sans l'aide de bibliothèque externe
-function generateRSAKeys($bitLength) {
+function generateRSAKeys($bitLength)
+{
     $p = generatePrime($bitLength);
     $q = generatePrime($bitLength);
 
@@ -66,14 +73,15 @@ function generateRSAKeys($bitLength) {
 
     $e = findCoprime($phi);
     $d = modInverse($e, $phi);
-    
+
     return [
         'publicKey' => ['e' => gmp_strval($e), 'n' => gmp_strval($n)],
         'privateKey' => ['d' => gmp_strval($d), 'n' => gmp_strval($n)]
     ];
 }
 
-function generatePrime($bitLength) {
+function generatePrime($bitLength)
+{
     do {
         $randomNumber = gmp_random_bits($bitLength);
     } while (!gmp_prob_prime($randomNumber, 50));
@@ -81,7 +89,8 @@ function generatePrime($bitLength) {
     return $randomNumber;
 }
 
-function findCoprime($phi) {
+function findCoprime($phi)
+{
     $e = gmp_init(65537);
     $phi = gmp_init($phi);
 
@@ -92,7 +101,8 @@ function findCoprime($phi) {
     return $e;
 }
 
-function modInverse($a, $m) {
+function modInverse($a, $m)
+{
     $a = gmp_init($a);
     $m = gmp_init($m);
 
@@ -102,7 +112,8 @@ function modInverse($a, $m) {
 }
 
 
-function modPow($base, $exposant, $modulo) {
+function modPow($base, $exposant, $modulo)
+{
     $base = gmp_init($base);
     $exposant = gmp_init($exposant);
     $modulo = gmp_init($modulo);
@@ -123,7 +134,8 @@ function modPow($base, $exposant, $modulo) {
     return gmp_strval($resultatFinal);
 }
 
-function stringToNumber($string) {
+function stringToNumber($string)
+{
     $result = gmp_init('0');
     $length = strlen($string);
 
@@ -135,7 +147,8 @@ function stringToNumber($string) {
     return $result;
 }
 
-function numberToString($number) {
+function numberToString($number)
+{
     $result = '';
 
     while (gmp_cmp($number, 0) > 0) {
@@ -147,13 +160,15 @@ function numberToString($number) {
     return $result;
 }
 
-function encryptRSA($message, $publicKey) {
+function encryptRSA($message, $publicKey)
+{
     $numericMessage = stringToNumber($message);
     $encryptedMessage = modPow($numericMessage, $publicKey['e'], $publicKey['n']);
     return $encryptedMessage;
 }
 
-function decryptRSA($encryptedMessage, $privateKey) {
+function decryptRSA($encryptedMessage, $privateKey)
+{
     $decryptedNumericMessage = modPow($encryptedMessage, $privateKey['d'], $privateKey['n']);
     $decryptedMessage = numberToString($decryptedNumericMessage);
     return $decryptedMessage;

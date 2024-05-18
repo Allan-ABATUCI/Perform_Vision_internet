@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Utils/functions.php';
+
 class Controller_auth extends Controller
 {
     public function action_auth()
@@ -14,120 +16,103 @@ class Controller_auth extends Controller
 
     public function action_login()
     {
-
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = sanitizeInput($_POST['email']);
+            $password = sanitizeInput($_POST['password']);
 
-            if (isset($_POST['email'], $_POST['password']) && !empty($_POST['email']) && !empty($_POST['password'])) {
-                $email = e(trim($_POST['email']));
-                $password = e(trim($_POST['password']));
+            if ($this->validateLoginInput($email, $password)) {
+                $user = Model::getModel()->getUserByCredentials($email, $password);
 
-                if (strlen($password) <= 256 && strlen($email) <= 128) {
-                    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $user = Model::getModel()->getUserByCredentials($email, $password);
+                if ($user) {
+                    session_start();
+                    session_regenerate_id(true);
 
-                        if ($user) {
+                    $_SESSION['user_id'] = $user['id_utilisateur'];
+                    $_SESSION['user_token'] = $user['token'];
+                    $_SESSION['expire_time'] = time() + (30 * 60); // 30 minutes session expiration
 
-                            var_dump($user);
-
-                            // Connexion réussie, créer une session et stocker le token
-                            session_start();
-
-                            // Vous pouvez stocker d'autres informations de l'utilisateur si nécessaire
-                            $_SESSION['user_id'] = $user['id_utilisateur'];
-                            $_SESSION['user_token'] = $user['token'];
-                            $_SESSION['expire_time'] = time() + (30 * 60); // 15 minutes d'expiration
-
-                            // Rediriger vers le tableau de bord après la connexion réussie
-                            header("Location: ?controller=dashboard");
-                            exit();
-                        } else {
-                            echo "Identifiants incorrects.";
-                        }
-                    } else {
-                        echo "Format d'e-mail invalide.";
-                    }
+                    header("Location: ?controller=dashboard");
+                    exit();
                 } else {
-                    echo "Les données saisies dépassent les limites autorisées.";
+                    $this->renderError("Identifiants incorrects.");
                 }
             } else {
-                echo "Veuillez remplir tous les champs requis.";
+                $this->renderError("Données saisies invalides.");
             }
         } else {
-            echo "Accès non autorisé.";
+            $this->renderError("Accès non autorisé.");
         }
 
         $this->render("auth", []);
     }
 
-    public function action_register() {
-
+    public function action_register()
+    {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (
-                isset($_POST['nom'], $_POST['prenom'], $_POST['email'], $_POST['password'], $_POST['tabs'])
-                && !empty($_POST['nom']) && !empty($_POST['prenom']) && !empty($_POST['email']) && !empty($_POST['password'])
-            ) {
-                $nom = e(trim($_POST['nom']));
-                $prenom = e(trim($_POST['prenom']));
-                $email = e(trim($_POST['email']));
-                $password = e(trim($_POST['password']));
+            $nom = sanitizeInput($_POST['nom']);
+            $prenom = sanitizeInput($_POST['prenom']);
+            $email = sanitizeInput($_POST['email']);
+            $password = sanitizeInput($_POST['password']);
+            $role = sanitizeInput($_POST['tabs']);
 
-                if (strlen($nom) <= 64 && strlen($prenom) <= 64 && strlen($password) <= 256 && strlen($email) <= 128) {
-                    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        if (preg_match('/^[a-zA-Z\-]+$/', $nom) && preg_match('/^[a-zA-Z\-]+$/', $prenom)) {
+            if ($this->validateRegisterInput($nom, $prenom, $email, $password, $role)) {
+                $result = Model::getModel()->creationUtilisateur($nom, $prenom, $password, $email, $role);
 
-                            $role = isset($_POST['tabs']) ? ($_POST['tabs'] === 'client' ? 'client' : ($_POST['tabs'] === 'formateur' ? 'formateur' : '')) : '';
+                if ($result) {
+                    $verificationToken = Model::getModel()->getTokenUtilisateur($email);
+                    $verificationLink = '?controller=auth&action=valide_email&token=' . urlencode($verificationToken);
 
-                            if ($role !== '') {
-                                $result = Model::getModel()->creationUtilisateur($nom, $prenom, $password, $email, $role);
+                    EmailSender::sendVerificationEmail($email, 'Vérification de l\'adresse e-mail', 'Cliquez sur le lien suivant pour vérifier votre adresse e-mail: ' . $verificationLink);
 
-                                if ($result) {
-                                    echo "Inscription réussie!<br>";
-                                    $verificationToken = Model::getModel()->getTokenUtilisateur($email);
-                                    $verificationLink = 'http://localhost/perform_vision/?controller=auth&action=valide_email'. '&token=' . urlencode($verificationToken);
-
-                                    EmailSender::sendVerificationEmail($email, 'Vérification de l\'adresse e-mail', 'Cliquez sur le lien suivant pour vérifier votre adresse e-mail: ' . $verificationLink);
-                                    
-                                    echo "<br> Un e-mail de vérification a été envoyé à votre adresse. <br>";
-
-                                } else {
-                                    echo "Erreur lors de l'inscription.";
-                                }
-                            } else {
-                                echo "Rôle invalide.";
-                            }
-                        } else {
-                            echo "Le nom et le prénom ne doivent contenir que des lettres et des tirets.";
-                        }
-                    } else {
-                        echo "Format d'email invalide.";
-                    }
+                    $this->renderSuccess("Inscription réussie! Un e-mail de vérification a été envoyé.");
                 } else {
-                    echo "Les données saisies dépassent les limites autorisées.";
+                    $this->renderError("Erreur lors de l'inscription.");
                 }
             } else {
-                echo "Veuillez remplir tous les champs requis.";
+                $this->renderError("Données saisies invalides.");
             }
         } else {
-            echo "Accès non autorisé.";
+            $this->renderError("Accès non autorisé.");
         }
 
         $this->render("auth", []);
-
     }
 
-    public function action_valide_email() {
-        // Récupérer le token depuis les paramètres de l'URL
-        $token = isset($_GET['token']) ? $_GET['token'] : '';
-    
-        // Valider le token en appelant une fonction du modèle
+    public function action_valide_email()
+    {
+        $token = sanitizeInput($_GET['token']);
         $validationResult = Model::getModel()->validerTokenUtilisateur($token);
-    
+
         if ($validationResult) {
-            echo "Adresse e-mail vérifiée avec succès!";
+            $this->renderSuccess("Adresse e-mail vérifiée avec succès !");
         } else {
-            echo "Erreur lors de la vérification de l'adresse e-mail. Le lien peut avoir expiré ou être invalide.";
+            $this->renderError("Erreur lors de la vérification de l'adresse e-mail. Le lien peut avoir expiré ou être invalide.");
         }
-    
+
         $this->render("auth", []);
+    }
+
+    private function validateLoginInput($email, $password)
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) && !empty($password) && strlen($password) <= 256 && strlen($email) <= 128;
+    }
+
+
+    private function validateRegisterInput($nom, $prenom, $email, $password, $role)
+    {
+        return !empty($nom) && !empty($prenom) && filter_var($email, FILTER_VALIDATE_EMAIL) && !empty($password) &&
+            strlen($nom) <= 64 && strlen($prenom) <= 64 && strlen($password) <= 256 && strlen($email) <= 128 &&
+            preg_match('/^[a-zA-Z\-]+$/', $nom) && preg_match('/^[a-zA-Z\-]+$/', $prenom) &&
+            in_array($role, ['client', 'formateur']);
+    }
+
+    private function renderError($message)
+    {
+        echo "<div class='error'>$message</div>";
+    }
+
+    private function renderSuccess($message)
+    {
+        echo "<div class='success'>$message</div>";
     }
 }
