@@ -33,10 +33,10 @@ class Model
         }
         return self::$instance;
     }
-    
-//////////////////// -LES FONCTIONS- ////////////////////
 
-////// -auth- //////
+    //////////////////// -LES FONCTIONS- ////////////////////
+
+    ////// -auth- //////
 
     /**
      * Get the token for a user by email.
@@ -44,7 +44,8 @@ class Model
      * @param string $email User's email
      * @return string|false Token on success, false on failure
      */
-    public function getTokenUtilisateur($email) {
+    public function getTokenUtilisateur($email)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT token FROM utilisateur WHERE mail = :email");
             $stmt->bindParam(':email', $email, PDO::PARAM_STR);
@@ -61,14 +62,15 @@ class Model
             return false;
         }
     }
-    
+
     /**
      * Valider le token d'un utilisateur.
      *
      * @param string $token Token de l'utilisateur
      * @return bool True en cas de succès, false en cas d'échec
      */
-    public function validerTokenUtilisateur($token) {
+    public function validerTokenUtilisateur($token)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE utilisateur SET mail_verifier = true WHERE token = :token");
             $stmt->bindParam(':token', $token, PDO::PARAM_STR);
@@ -94,10 +96,10 @@ class Model
         try {
             // Generate token
             $token = bin2hex(random_bytes(128)); // 256 characters
-    
+
             // hash
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $photo_de_profil='default.png';
+            $photo_de_profil = 'default.png';
 
             //requete 
             $stmt = $this->bd->prepare("INSERT INTO utilisateur (nom, prenom, password, mail, token, photo_de_profil, date_de_creation, mail_verifier) VALUES (:nom, :prenom, :password, :mail, :token, :photo_de_profil, NOW(), FALSE)");
@@ -108,9 +110,9 @@ class Model
             $stmt->bindParam(':token', $token);
             $stmt->bindParam(':photo_de_profil', $photo_de_profil);
             $stmt->execute();
-    
+
             $userId = $this->bd->lastInsertId();
-    
+
 
             if ($role === 'client') {
                 $stmt = $this->bd->prepare("INSERT INTO client (id_utilisateur) VALUES (:userId)");
@@ -119,14 +121,14 @@ class Model
             }
             $stmt->bindParam(':userId', $userId);
             $stmt->execute();
-    
+
             return true;
         } catch (PDOException $e) {
             //echo 'Erreur : ' . $e->getMessage();
             return false;
         }
     }
-    
+
     /**
      *  Verifier mail =>true
      * 
@@ -138,27 +140,27 @@ class Model
     {
         try {
             $this->bd->beginTransaction();
-    
+
             // Prepare 
             $stmt = $this->bd->prepare("UPDATE utilisateur SET mail_verifier = TRUE WHERE token = :token AND id_utilisateur = :id_utilisateur");
-    
+
             // Bind 
             $stmt->bindParam(':token', $token);
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
-    
+
             // Execute 
             $stmt->execute();
 
             $this->bd->commit();
 
             $stmt->closeCursor();
-    
+
             return true; // Update 
         } catch (PDOException $e) {
             // Rollback
             $this->bd->rollBack();
 
-            return false; 
+            return false;
         }
     }
 
@@ -167,7 +169,7 @@ class Model
      * 
      * @param string $mail mail de l'utilisateur
      * @return Bool
-    */
+     */
     public function utilisateurExiste($mail)
     {
         try {
@@ -186,7 +188,7 @@ class Model
 
             return $count > 0; // Retourne True si il y a plus de 0 utilisateur avec l'email
         } catch (PDOException $e) {
-            return false; 
+            return false;
         }
     }
 
@@ -209,12 +211,12 @@ class Model
             $stmt->execute();
 
             $mailVerified = $stmt->fetchColumn();
-   
+
             $stmt->closeCursor();
 
             return $mailVerified === true; // Renvoie true si mail_verifier est true, false sinon
         } catch (PDOException $e) {
-            return false; 
+            return false;
         }
     }
 
@@ -232,15 +234,15 @@ class Model
             $stmt = $this->bd->prepare("SELECT * FROM utilisateur WHERE mail = :mail");
 
             // Bind
-            $stmt->bindParam(':mail', $mail);
+            $stmt->bindParam(':mail', $mail, PDO::PARAM_STR);
 
             // Execute
             $stmt->execute();
 
-            
+
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            
+
             $stmt->closeCursor();
 
             // Vérifiez le mot de passe si l'utilisateur est trouvé
@@ -263,7 +265,8 @@ class Model
      * @param string $token token de l'utilisateur
      * @return Bool
      */
-    public function verifierToken($token){
+    public function verifierToken($token)
+    {
         try {
             // Prepare
             $stmt = $this->bd->prepare("SELECT * FROM utilisateur WHERE token = :token");
@@ -274,10 +277,10 @@ class Model
             // Execute
             $stmt->execute();
 
-            
+
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            
+
             $stmt->closeCursor();
 
             // Vérifiez le mot de passe si l'utilisateur est trouvé
@@ -294,7 +297,7 @@ class Model
         }
     }
 
-////// -discussion- //////
+    ////// -discussion- //////
 
     /**
      * Récuperer les discussions l'utilisateur
@@ -302,17 +305,18 @@ class Model
      * @param string $id_utilisateur
      * @return array liste des discussions
      */
-    public function recupererDiscussion($id_utilisateur){
-        try{
+    public function recupererDiscussion($id_utilisateur)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM discussion WHERE id_utilisateur = :id_utilisateur OR id_utilisateur_1 = :id_utilisateur");
 
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
-            $stmt->execute();  
-             
+            $stmt->execute();
+
             $tab = $stmt->fetchAll(PDO::FETCH_ASSOC);
             return $tab;
-        } catch  (PDOException $e) {
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -323,17 +327,18 @@ class Model
      * @param string $discussion
      * @return array le dernier message
      */
-    public function dernierMessageDiscussion($id_discussion){
-        try{
+    public function dernierMessageDiscussion($id_discussion)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM message WHERE id_discussion = :id_discussion ORDER BY date_heure DESC LIMIT 1");
 
             $stmt->bindParam(':id_discussion', $id_discussion, PDO::PARAM_INT);
-            $stmt->execute();  
-             
+            $stmt->execute();
+
             $tab = $stmt->fetch(PDO::FETCH_ASSOC);
             return $tab;
-        } catch  (PDOException $e) {
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -344,22 +349,23 @@ class Model
      * @param string $discussion
      * @return array les messages
      */
-    public function messagesDiscussion($id_discussion){
-        try{
+    public function messagesDiscussion($id_discussion)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM message WHERE id_discussion = :id_discussion ORDER BY date_heure ASC");
 
             $stmt->bindParam(':id_discussion', $id_discussion, PDO::PARAM_INT);
-            $stmt->execute();  
-             
+            $stmt->execute();
+
             $tab = $stmt->fetchAll(PDO::FETCH_ASSOC);
             return $tab;
-        } catch  (PDOException $e) {
+        } catch (PDOException $e) {
             return null;
         }
     }
-    
-////// -verif cookie token/id- //////
+
+    ////// -verif cookie token/id- //////
 
     /**
      * verifier id et token
@@ -368,8 +374,9 @@ class Model
      * @param string $token token de l'utilisateur
      * @return bool
      */
-    public function verifCookie($id_utilisateur,$token){
-        try{
+    public function verifCookie($id_utilisateur, $token)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM utilisateur WHERE id_utilisateur = :id_utilisateur");
 
@@ -379,7 +386,7 @@ class Model
             // Execute
             $stmt->execute();
 
-            
+
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
@@ -389,7 +396,7 @@ class Model
                 return false;
             }
 
-        } catch  (PDOException $e) {
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -400,30 +407,31 @@ class Model
      * @param string $id_utilisateur Identifiant de l'utilisateur
      * @return bool
      */
-    public function verifAdmin($id_utilisateur){
-        try{
+    public function verifAdmin($id_utilisateur)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM admin WHERE id_utilisateur = :id_utilisateur");
-    
+
             // Bind
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
-    
+
             // Execute
             $stmt->execute();
-    
+
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
             if ($user !== false && $id_utilisateur == $user['id_utilisateur']) {
                 return true;
             } else {
                 return false;
             }
-    
+
         } catch (PDOException $e) {
             return false;
         }
     }
-    
+
 
     /**
      * Vérifier si l'utilisateur est un administrateur.
@@ -431,38 +439,40 @@ class Model
      * @param string $id_utilisateur Identifiant de l'utilisateur
      * @return bool
      */
-    public function verifModerateur($id_utilisateur){
-        try{
+    public function verifModerateur($id_utilisateur)
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT * FROM moderateur WHERE id_utilisateur_1 = :id_utilisateur");
-    
+
             // Bind
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
-    
+
             // Execute
             $stmt->execute();
-    
+
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
             if ($user !== false && $id_utilisateur == $user['id_utilisateur_1']) {
                 return true;
             } else {
                 return false;
             }
-    
+
         } catch (PDOException $e) {
             return false;
         }
     }
-    
+
     /**
      * Vérifier si l'utilisateur est affranchi en tant que modérateur.
      *
      * @param string $id_utilisateur Identifiant de l'utilisateur
      * @return bool
      */
-    public function verifAffranchiModerateur($id_utilisateur){
-        try{
+    public function verifAffranchiModerateur($id_utilisateur)
+    {
+        try {
             // Préparation de la requête
             $stmt = $this->bd->prepare("SELECT * FROM Affranchis WHERE id_utilisateur = :id_utilisateur");
 
@@ -488,7 +498,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur
      * @return bool Si le formateur existe ou non
      */
-    public function verifFormateur($id_utilisateur) {
+    public function verifFormateur($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT COUNT(*) FROM formateur WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -502,15 +513,16 @@ class Model
         }
     }
 
-////// -GET NB- //////
+    ////// -GET NB- //////
 
     /**
      * Obtenir le nombre d'utilisateurs.
      *
      * @return int
      */
-    public function nbUtilisateur(){
-        try{
+    public function nbUtilisateur()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM utilisateur;");
 
@@ -520,8 +532,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -531,8 +543,9 @@ class Model
      *
      * @return int
      */
-    public function nbClient(){
-        try{
+    public function nbClient()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM client;");
 
@@ -542,8 +555,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -553,8 +566,9 @@ class Model
      *
      * @return int
      */
-    public function nbFormateur(){
-        try{
+    public function nbFormateur()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM formateur;");
 
@@ -564,8 +578,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -575,8 +589,9 @@ class Model
      *
      * @return int
      */
-    public function nbDiscussion(){
-        try{
+    public function nbDiscussion()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM discussion;");
 
@@ -586,8 +601,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -597,8 +612,9 @@ class Model
      *
      * @return int
      */
-    public function nbCategorie(){
-        try{
+    public function nbCategorie()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM categorie;");
 
@@ -608,8 +624,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -619,8 +635,9 @@ class Model
      *
      * @return int
      */
-    public function nbActivite(){
-        try{
+    public function nbActivite()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM activite;");
 
@@ -630,8 +647,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -641,8 +658,9 @@ class Model
      *
      * @return int
      */
-    public function nbModerateur(){
-        try{
+    public function nbModerateur()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM moderateur;");
 
@@ -652,8 +670,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -663,8 +681,9 @@ class Model
      *
      * @return int
      */
-    public function nbTheme(){
-        try{
+    public function nbTheme()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM theme;");
 
@@ -674,8 +693,8 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -685,8 +704,9 @@ class Model
      *
      * @return int
      */
-    public function nbAffranchis(){
-        try{
+    public function nbAffranchis()
+    {
+        try {
             // Prepare 
             $stmt = $this->bd->prepare("SELECT COUNT(*) AS nb FROM Affranchis;");
 
@@ -696,13 +716,13 @@ class Model
             $nb = $stmt->fetch(PDO::FETCH_ASSOC);
 
             return $nb['nb'];
-             
-        } catch  (PDOException $e) {
+
+        } catch (PDOException $e) {
             return null;
         }
     }
 
-////// -Administration- //////
+    ////// -Administration- //////
 //suprimer//
 
     /**
@@ -711,12 +731,13 @@ class Model
      * @param String $id_utilisateur Identifiant de l'utilisateur
      * @return int
      */
-    public function deleteUtilisateur($id_utilisateur){
+    public function deleteUtilisateur($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("DELETE FROM utilisateur WHERE id_utilisateur = :id_utilisateur");
-    
+
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
-    
+
             $success = $stmt->execute();
 
             if ($success) {
@@ -724,7 +745,7 @@ class Model
             } else {
                 return false;
             }
-    
+
         } catch (PDOException $e) {
 
             return false;
@@ -737,7 +758,8 @@ class Model
      * @param int $id_activite Identifiant de l'activité
      * @return bool Succès ou échec
      */
-    public function deleteActivity($id_activite) {
+    public function deleteActivity($id_activite)
+    {
         try {
             $stmt = $this->bd->prepare("DELETE FROM activite WHERE id_activite = :id_activite");
             $stmt->bindParam(':id_activite', $id_activite, PDO::PARAM_INT);
@@ -761,7 +783,8 @@ class Model
      * @param int $id_discussion Identifiant de la discussion
      * @return bool Succès ou échec
      */
-    public function deleteDiscussion($id_utilisateur, $id_utilisateur_1, $id_discussion) {
+    public function deleteDiscussion($id_utilisateur, $id_utilisateur_1, $id_discussion)
+    {
         try {
             $this->bd->beginTransaction();
 
@@ -797,8 +820,9 @@ class Model
      * @param int $id_discussion Identifiant de la discussion
      * @return bool Succès ou échec
      */
-    private function deleteMessagesInDiscussion($id_utilisateur, $id_utilisateur_1, $id_discussion) {
-        try{
+    private function deleteMessagesInDiscussion($id_utilisateur, $id_utilisateur_1, $id_discussion)
+    {
+        try {
             $stmt = $this->bd->prepare("DELETE FROM message WHERE id_utilisateur = :id_utilisateur 
                 AND id_utilisateur_1 = :id_utilisateur_1 AND id_discussion = :id_discussion");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -825,7 +849,8 @@ class Model
      * @param int $id_categorie Identifiant de la catégorie
      * @return bool Succès ou échec
      */
-    public function deleteCategoryAndThemes($id_categorie) {
+    public function deleteCategoryAndThemes($id_categorie)
+    {
         try {
             $this->bd->beginTransaction();
 
@@ -856,8 +881,9 @@ class Model
      * @param int $id_categorie Identifiant de la catégorie
      * @return bool Succès ou échec
      */
-    private function deleteThemesInCategory($id_categorie) {
-        try{
+    private function deleteThemesInCategory($id_categorie)
+    {
+        try {
             $stmt = $this->bd->prepare("DELETE FROM theme WHERE id_categorie = :id_categorie");
             $stmt->bindParam(':id_categorie', $id_categorie, PDO::PARAM_INT);
             $stmt->execute();
@@ -884,8 +910,9 @@ class Model
      * @param int $id_categorie Identifiant de la catégorie
      * @return bool Succès ou échec
      */
-    private function deleteActivitiesWithThemeInCategory($id_categorie) {
-        try{
+    private function deleteActivitiesWithThemeInCategory($id_categorie)
+    {
+        try {
             $stmt = $this->bd->prepare("DELETE FROM activite WHERE id_categorie = :id_categorie");
             $stmt->bindParam(':id_categorie', $id_categorie, PDO::PARAM_INT);
             $stmt->execute();
@@ -908,7 +935,8 @@ class Model
      * @param int $id_moderateur Identifiant du modérateur
      * @return bool Succès ou échec
      */
-    public function removeModerator($id_moderateur) {
+    public function removeModerator($id_moderateur)
+    {
         try {
             $stmt = $this->bd->prepare("DELETE FROM moderateur WHERE id_utilisateur_1 = :id_moderateur");
             $stmt->bindParam(':id_moderateur', $id_moderateur, PDO::PARAM_INT);
@@ -920,7 +948,7 @@ class Model
     }
 
 
-//ajouter//
+    //ajouter//
 
     /**
      * Ajoutez une nouvelle catégorie.
@@ -929,7 +957,8 @@ class Model
      * @param bool $valide_categorie Si la catégorie est valide
      * @return bool Succès ou échec
      */
-    public function addCategory($nom_categorie, $valide_categorie) {
+    public function addCategory($nom_categorie, $valide_categorie)
+    {
         try {
             $stmt = $this->bd->prepare("INSERT INTO categorie (nom_categorie, valide_categorie) 
                                        VALUES (:nom_categorie, :valide_categorie)");
@@ -950,7 +979,8 @@ class Model
      * @param int $id_categorie Identifiant de la catégorie
      * @return bool Succès ou échec
      */
-    public function addTheme($nom_theme, $valide_theme, $id_categorie) {
+    public function addTheme($nom_theme, $valide_theme, $id_categorie)
+    {
         try {
             $stmt = $this->bd->prepare("INSERT INTO theme (nom_theme, valide_theme, id_categorie) 
                                        VALUES (:nom_theme, :valide_theme, :id_categorie)");
@@ -973,7 +1003,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur
      * @return bool Succès ou échec
      */
-    public function addActivity($nom_activite, $image, $description, $id_utilisateur) {
+    public function addActivity($nom_activite, $image, $description, $id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("INSERT INTO activite (nom_activite, image, description, id_utilisateur) 
                                        VALUES (:nom_activite, :image, :description, :id_utilisateur)");
@@ -987,8 +1018,9 @@ class Model
             return false;
         }
     }
-    
-    public function addModerator($id_utilisateur, $id_utilisateur_1) {
+
+    public function addModerator($id_utilisateur, $id_utilisateur_1)
+    {
         try {
             $stmt = $this->bd->prepare("INSERT INTO moderateur (id_utilisateur, id_utilisateur_1) 
                                        VALUES (:id_utilisateur, :id_utilisateur_1)");
@@ -1001,7 +1033,7 @@ class Model
         }
     }
 
-////// -Ajout d'information- //////
+    ////// -Ajout d'information- //////
 
     /**
      * Mettez à jour les informations LinkedIn pour un formateur.
@@ -1010,7 +1042,8 @@ class Model
      * @param string $linkedin Nouvelles informations LinkedIn
      * @return bool Succès ou échec
      */
-    public function updateFormateurLinkedin($id_utilisateur, $linkedin) {
+    public function updateFormateurLinkedin($id_utilisateur, $linkedin)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE formateur SET linkedin = :linkedin WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':linkedin', $linkedin, PDO::PARAM_STR);
@@ -1029,7 +1062,8 @@ class Model
      * @param string $cv Nouvelles informations du CV
      * @return bool Succès ou échec
      */
-    public function updateFormateurCV($id_utilisateur, $cv) {
+    public function updateFormateurCV($id_utilisateur, $cv)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE formateur SET cv = :cv WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':cv', $cv, PDO::PARAM_STR);
@@ -1048,7 +1082,8 @@ class Model
      * @param string $signature_electronique Nouvelles informations de signature électronique
      * @return bool Succès ou échec
      */
-    public function updateFormateurSignature($id_utilisateur, $signature_electronique) {
+    public function updateFormateurSignature($id_utilisateur, $signature_electronique)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE formateur SET signature_electronique = :signature_electronique WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':signature_electronique', $signature_electronique, PDO::PARAM_STR);
@@ -1067,7 +1102,8 @@ class Model
      * @param int $total_heures Nouveau total d'heures
      * @return bool Succès ou échec
      */
-    public function updateFormateurTotalHours($id_utilisateur, $total_heures) {
+    public function updateFormateurTotalHours($id_utilisateur, $total_heures)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE formateur SET total_heures = :total_heures WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':total_heures', $total_heures, PDO::PARAM_INT);
@@ -1086,7 +1122,8 @@ class Model
      * @param string $photo_de_profil Nouvelles informations de la photo de profil
      * @return bool Succès ou échec
      */
-    public function updateUserProfilePicture($id_utilisateur, $photo_de_profil) {
+    public function updateUserProfilePicture($id_utilisateur, $photo_de_profil)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE utilisateur SET photo_de_profil = :photo_de_profil WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':photo_de_profil', $photo_de_profil, PDO::PARAM_STR);
@@ -1105,7 +1142,8 @@ class Model
      * @param string $societe Nouvelles informations de l'entreprise
      * @return bool Succès ou échec
      */
-    public function updateClientCompany($id_utilisateur, $societe) {
+    public function updateClientCompany($id_utilisateur, $societe)
+    {
         try {
             $stmt = $this->bd->prepare("UPDATE client SET societe = :societe WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':societe', $societe, PDO::PARAM_STR);
@@ -1117,9 +1155,9 @@ class Model
         }
     }
 
-////// -Supprimer information- //////
+    ////// -Supprimer information- //////
 
-////// -get information by id- //////
+    ////// -get information by id- //////
 
     /**
      * Obtenez les informations du formateur par l'identifiant.
@@ -1127,7 +1165,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur (formateur)
      * @return array|false Informations du formateur ou false en cas d'échec
      */
-    public function getFormateurById($id_utilisateur) {
+    public function getFormateurById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM formateur WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -1145,7 +1184,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur (client)
      * @return array|false Informations du client ou false en cas d'échec
      */
-    public function getClientById($id_utilisateur) {
+    public function getClientById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM client WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -1163,7 +1203,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur
      * @return array|false Informations de l'utilisateur ou false en cas d'échec
      */
-    public function getUserById($id_utilisateur) {
+    public function getUserById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM utilisateur WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -1181,7 +1222,8 @@ class Model
      * @param int $id_utilisateur Identifiant de l'utilisateur (administrateur)
      * @return array|false Informations de l'administrateur ou false en cas d'échec
      */
-    public function getAdminById($id_utilisateur) {
+    public function getAdminById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM admin WHERE id_utilisateur = :id_utilisateur");
             $stmt->bindParam(':id_utilisateur', $id_utilisateur, PDO::PARAM_INT);
@@ -1201,7 +1243,8 @@ class Model
      * @param int $id_discussion Identifiant de la discussion
      * @return array|false Informations sur la discussion ou false en cas d'échec
      */
-    public function getDiscussionByIds($id_utilisateur, $id_utilisateur_1, $id_discussion) {
+    public function getDiscussionByIds($id_utilisateur, $id_utilisateur_1, $id_discussion)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM discussion WHERE id_utilisateur = :id_utilisateur 
                                        AND id_utilisateur_1 = :id_utilisateur_1 AND id_discussion = :id_discussion");
@@ -1222,7 +1265,8 @@ class Model
      * @param int $id_utilisateur Identifiant du formateur
      * @return array|false Liste de compétences du formateur ou false en cas d'échec
      */
-    public function getCompetencesFormateurById($id_utilisateur) {
+    public function getCompetencesFormateurById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT c.nom_categorie, t.nom_theme, n.libelle_niveau
                                     FROM aExpertiseProfessionnelle aep
@@ -1263,7 +1307,8 @@ class Model
      * @param int $id_message Identifiant du message
      * @return array|false Informations sur le message ou false en cas d'échec
      */
-    public function getMessageByIds($id_utilisateur_1, $id_utilisateur_2, $id_discussion, $id_message) {
+    public function getMessageByIds($id_utilisateur_1, $id_utilisateur_2, $id_discussion, $id_message)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM message WHERE id_utilisateur_1 = :id_utilisateur_1 
                                        AND id_utilisateur_2 = :id_utilisateur_2 AND id_discussion = :id_discussion 
@@ -1280,8 +1325,8 @@ class Model
         }
     }
 
-////// -pour controlleur formateurs- //////
- 
+    ////// -pour controlleur formateurs- //////
+
     /**
      * Get the number of formateurs based on theme and/or categorie.
      *
@@ -1289,7 +1334,8 @@ class Model
      * @param int|null $categorieId Categorie ID (optional)
      * @return int Number of formateurs
      */
-    public function getNbFormateurByThemeOrCategorie($themeId = null, $categorieId = null) {
+    public function getNbFormateurByThemeOrCategorie($themeId = null, $categorieId = null)
+    {
         try {
             $sql = "SELECT COUNT(DISTINCT f.id_utilisateur) AS formateur_count
                     FROM formateur f";
@@ -1326,14 +1372,15 @@ class Model
         }
     }
 
-    
+
     /**
      * Get the ID of a categorie by name.
      *
      * @param string $nom_categorie Categorie name
      * @return int|null Categorie ID or null if not found
      */
-    public function getCategorieIdByName($nom_categorie) {
+    public function getCategorieIdByName($nom_categorie)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT id_categorie FROM categorie WHERE nom_categorie = :nom_categorie");
             $stmt->bindParam(':nom_categorie', $nom_categorie, PDO::PARAM_STR);
@@ -1353,7 +1400,8 @@ class Model
      * @param string $nom_theme Theme name
      * @return int|null Theme ID or null if not found
      */
-    public function getThemeIdByName($nom_theme) {
+    public function getThemeIdByName($nom_theme)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT id_theme FROM theme WHERE nom_theme = :nom_theme");
             $stmt->bindParam(':nom_theme', $nom_theme, PDO::PARAM_STR);
@@ -1374,7 +1422,8 @@ class Model
      * @param int|null $categorieId Categorie ID (optional)
      * @param int|null $themeId Theme ID (optional)
      */
-    public function getFormateursByPageAndCategoryOrTheme($page, $categorieId = null, $themeId = null) {
+    public function getFormateursByPageAndCategoryOrTheme($page, $categorieId = null, $themeId = null)
+    {
         try {
             $formateursPerPage = 5;
             $offset = ($page - 1) * $formateursPerPage;
@@ -1424,7 +1473,8 @@ class Model
      * @param int|null $themeId Theme ID (optional)
      * @return int Number of pages
      */
-    public function getFormateurPagesByCategoryOrTheme($categorieId = null, $themeId = null) {
+    public function getFormateurPagesByCategoryOrTheme($categorieId = null, $themeId = null)
+    {
         try {
             $formateursPerPage = 5;
 
@@ -1470,7 +1520,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false User information or false on failure
      */
-    public function getFormateurUserInfoById($id_utilisateur) {
+    public function getFormateurUserInfoById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT u.id_utilisateur, u.nom, u.prenom, u.password, u.mail, u.token,
                                               u.photo_de_profil, u.date_de_creation, u.mail_verifier,
@@ -1495,7 +1546,8 @@ class Model
      * @param int|null $themeId Theme ID (optional)
      * @return array|null Formateurs' basic information or null on failure
      */
-    public function getFormateursBasicInfoByPageAndCategoryOrTheme($page, $categoryId = null, $themeId = null) {
+    public function getFormateursBasicInfoByPageAndCategoryOrTheme($page, $categoryId = null, $themeId = null)
+    {
         try {
             $formateursPerPage = 5;
             $offset = ($page - 1) * $formateursPerPage;
@@ -1545,7 +1597,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false Level data or false on failure
      */
-    public function getLevelDataById($id_utilisateur) {
+    public function getLevelDataById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT aep.id_theme, aep.id_niveau, n.libelle_niveau
                                        FROM aExpertiseProfessionnelle aep
@@ -1566,7 +1619,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false Pedagogical experience data or false on failure
      */
-    public function getPedagogicalExperienceDataById($id_utilisateur) {
+    public function getPedagogicalExperienceDataById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT aep.id_theme, t.nom_theme, aep.id_public, p.libelle_public,
                                               aep.volume_h_moyen_session, aep.nb_session_effectuee, aep.commentaire
@@ -1589,7 +1643,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false Categorie data or false on failure
      */
-    public function getCategorieDataById($id_utilisateur) {
+    public function getCategorieDataById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT DISTINCT c.id_categorie, c.nom_categorie, c.valide_categorie
                                        FROM categorie c
@@ -1611,7 +1666,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false Theme data or false on failure
      */
-    public function getThemeDataById($id_utilisateur) {
+    public function getThemeDataById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT DISTINCT t.id_theme, t.nom_theme, c.id_categorie, c.nom_categorie, t.valide_theme
                                        FROM theme t
@@ -1633,7 +1689,8 @@ class Model
      * @param int $id_utilisateur Formateur ID
      * @return array|false Expertise data or false on failure
      */
-    public function getExpertiseDataById($id_utilisateur) {
+    public function getExpertiseDataById($id_utilisateur)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT aep.id_theme, t.nom_theme, aep.duree_experience, aep.commentaire, aep.id_niveau
                                        FROM aExpertiseProfessionnelle aep
@@ -1657,7 +1714,8 @@ class Model
      * @param int|null $themeId Theme ID (optional)
      * @return array|null Formateurs' basic information with additional details or null on failure
      */
-    public function getFormateursBasicInfoByPageAndCategoryOrTheme2($page, $categoryId = null, $themeId = null) {
+    public function getFormateursBasicInfoByPageAndCategoryOrTheme2($page, $categoryId = null, $themeId = null)
+    {
         try {
             $formateursPerPage = 5;
             $offset = ($page - 1) * $formateursPerPage;
@@ -1708,7 +1766,8 @@ class Model
      * @param bool $validation_moderation Moderation validation status
      * @return bool True on success, false on failure
      */
-    public function addMessageToDiscussion($texte, $id_utilisateur_1, $id_utilisateur_2, $id_discussion, $validation_moderation, $senderId) {
+    public function addMessageToDiscussion($texte, $id_utilisateur_1, $id_utilisateur_2, $id_discussion, $validation_moderation, $senderId)
+    {
         try {
             $stmt = $this->bd->prepare("INSERT INTO message (id_utilisateur_1, id_utilisateur_2, id_discussion, texte, date_heure, validation_moderation, lu, id_utilisateur)
                                        VALUES (:id_utilisateur_1, :id_utilisateur_2, :id_discussion, :texte, NOW(), :validation_moderation, :lu, :senderId)");
@@ -1734,7 +1793,8 @@ class Model
      * @param int $id_discussion Identifiant de la discussion
      * @return array|null Informations de la discussion ou null en cas d'erreur
      */
-    public function getDiscussionById($id_discussion) {
+    public function getDiscussionById($id_discussion)
+    {
         try {
             // Prépare la requête pour récupérer les informations de la discussion
             $stmt = $this->bd->prepare("SELECT * FROM discussion WHERE id_discussion = :id_discussion");
@@ -1750,13 +1810,14 @@ class Model
         }
     }
 
-    public function countUnreadMessages($userId, $discussionId) {
+    public function countUnreadMessages($userId, $discussionId)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT COUNT(*) FROM message WHERE id_utilisateur = :userId AND id_discussion = :discussionId AND lu = FALSE");
             $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':discussionId', $discussionId, PDO::PARAM_INT);
             $stmt->execute();
-    
+
             return $stmt->fetchColumn();
         } catch (PDOException $e) {
             return 0; // En cas d'erreur, retourner 0
@@ -1770,7 +1831,8 @@ class Model
      * @param int $discussionId Identifiant de la discussion
      * @return array|bool Tableau contenant l'heure du dernier message et son statut de lecture pour l'utilisateur spécifié, ou false en cas d'erreur
      */
-    public function getLastMessageInfo($userId, $discussionId) {
+    public function getLastMessageInfo($userId, $discussionId)
+    {
         try {
             // Prépare la requête pour récupérer l'heure du dernier message et son statut de lecture pour un utilisateur spécifique
             $stmt = $this->bd->prepare("SELECT date_heure, lu FROM message 
@@ -1802,13 +1864,14 @@ class Model
     }
 
 
-    
+
     /**
      * Récupérez toutes les catégories et thèmes.
      *
      * @return array|null Tableau contenant les catégories et thèmes ou null en cas d'échec
      */
-    public function getAllCategories() {
+    public function getAllCategories()
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM categorie");
             $stmt->execute();
@@ -1825,7 +1888,8 @@ class Model
      * @param int $categoryId Category ID
      * @return array|null Array of themes or null in case of failure
      */
-    public function getThemesByCategoryId($categoryId) {
+    public function getThemesByCategoryId($categoryId)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM theme WHERE id_categorie = :id_categorie");
             $stmt->bindParam(':id_categorie', $categoryId, PDO::PARAM_INT);
@@ -1845,7 +1909,8 @@ class Model
      * @param array|null $themeIds Array of Theme IDs (optional)
      * @return array|null Formateurs' basic information or null on failure
      */
-    public function getFormateursBasicInfoByPageAndCategoryOrTheme3($page, $categoryId = null, $themeIds = null) {
+    public function getFormateursBasicInfoByPageAndCategoryOrTheme3($page, $categoryId = null, $themeIds = null)
+    {
         try {
             $formateursPerPage = 5;
             $offset = ($page - 1) * $formateursPerPage;
@@ -1893,7 +1958,8 @@ class Model
      * @param array|null $themeIds Array of Theme IDs (optional)
      * @return int Number of pages
      */
-    public function getFormateurPagesByCategoryOrTheme3($categorieId = null, $themeIds = null) {
+    public function getFormateurPagesByCategoryOrTheme3($categorieId = null, $themeIds = null)
+    {
         try {
             $formateursPerPage = 5;
 
@@ -1937,7 +2003,8 @@ class Model
      * @param int|null $categorieId Categorie ID (optional)
      * @return int Number of formateurs
      */
-    public function getNbFormateurByThemeOrCategorie3($themeIds = null, $categorieId = null) {
+    public function getNbFormateurByThemeOrCategorie3($themeIds = null, $categorieId = null)
+    {
         try {
             $sql = "SELECT COUNT(DISTINCT f.id_utilisateur) AS formateur_count
                     FROM formateur f";
@@ -1982,7 +2049,8 @@ class Model
      * @param int $categorie_id Category ID
      * @return array|null Array with category name and theme names or null on failure
      */
-    public function getUserCategoryAndThemes($id_utilisateur, $categorie_id) {
+    public function getUserCategoryAndThemes($id_utilisateur, $categorie_id)
+    {
         try {
             $sql = "SELECT c.nom_categorie, ARRAY_AGG(t.nom_theme) AS theme_names,
                     ARRAY_AGG(aep.commentaire) AS expertise_comment
@@ -2012,7 +2080,8 @@ class Model
      * @param int $id_utilisateur\_1 Identifiant du formateur
      * @return int|bool L'identifiant de la discussion si elle existe, ou false sinon
      */
-    public function isDiscussionExist($id_utilisateur, $id_utilisateur_1) {
+    public function isDiscussionExist($id_utilisateur, $id_utilisateur_1)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT id_discussion FROM discussion 
                                     WHERE id_utilisateur = :id_utilisateur AND id_utilisateur_1 = :id_utilisateur_1");
@@ -2039,7 +2108,8 @@ class Model
      * @param int $id_utilisateur\_1 Identifiant du formateur
      * @return int L'identifiant de la discussion
      */
-    public function startDiscussion($id_utilisateur, $id_utilisateur_1) {
+    public function startDiscussion($id_utilisateur, $id_utilisateur_1)
+    {
         if (!$this->isDiscussionExist($id_utilisateur, $id_utilisateur_1)) {
             try {
                 $stmt = $this->bd->prepare("INSERT INTO discussion (id_utilisateur, id_utilisateur_1) 
@@ -2074,24 +2144,25 @@ class Model
                                         LEFT JOIN moderateur m ON u.id_utilisateur = m.id_utilisateur_1
                                         WHERE u.id_utilisateur IN (SELECT id_utilisateur FROM formateur)
                                           AND u.id_utilisateur NOT IN (SELECT id_utilisateur FROM admin)");
-    
+
             $stmt->execute();
-    
+
             $formateurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
             return $formateurs;
         } catch (PDOException $e) {
             return false;
         }
     }
-    
+
     /**
      * Valide un message en mettant à jour la colonne validation_moderation à TRUE.
      *
      * @param int $id_message Identifiant du message à valider.
      * @return mixed Retourne l'id_discussion si la validation réussit, sinon retourne false.
      */
-    public function validateMessage($id_message) {
+    public function validateMessage($id_message)
+    {
         try {
             // Récupérer l'id_discussion avant la mise à jour
             $stmtSelect = $this->bd->prepare("SELECT id_discussion FROM message WHERE id_message = :id_message");
@@ -2119,8 +2190,9 @@ class Model
      * 
      * @return array Liste des discussions avec les détails
      */
-    public function recupererToutesDiscussions(){
-        try{
+    public function recupererToutesDiscussions()
+    {
+        try {
             // Préparation de la requête
             $stmt = $this->bd->prepare("
                 SELECT 
@@ -2143,7 +2215,7 @@ class Model
             // Récupération des résultats
             $tab = $stmt->fetchAll(PDO::FETCH_ASSOC);
             return $tab;
-        } catch  (PDOException $e) {
+        } catch (PDOException $e) {
             return null;
         }
     }
@@ -2153,7 +2225,8 @@ class Model
      * 
      * @return array Liste des utilisateurs non affranchis
      */
-    public function recupererUtilisateursNonAffranchis(){
+    public function recupererUtilisateursNonAffranchis()
+    {
         try {
             // Préparation de la requête
             $stmt = $this->bd->prepare("
@@ -2184,7 +2257,8 @@ class Model
      * @param int $id_utilisateur L'ID de l'utilisateur à affranchir
      * @return bool True si l'affranchissement est réussi, False sinon
      */
-    public function affranchirUtilisateur($id_moderateur, $id_utilisateur){
+    public function affranchirUtilisateur($id_moderateur, $id_utilisateur)
+    {
         try {
             // Préparation de la requête
             $stmt = $this->bd->prepare("
@@ -2211,7 +2285,8 @@ class Model
      *
      * @return array|bool Tableau d'activités ou false en cas d'échec
      */
-    public function getActivitiesList() {
+    public function getActivitiesList()
+    {
         try {
             $stmt = $this->bd->query("SELECT * FROM activite");
             $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -2228,7 +2303,8 @@ class Model
      * @param int $id_activite Identifiant de l'activité
      * @return array|bool Tableau contenant les informations de l'activité ou false en cas d'échec
      */
-    public function getActivityById($id_activite) {
+    public function getActivityById($id_activite)
+    {
         try {
             $stmt = $this->bd->prepare("SELECT * FROM activite WHERE id_activite = :id_activite");
             $stmt->bindParam(':id_activite', $id_activite, PDO::PARAM_INT);
@@ -2249,7 +2325,8 @@ class Model
      * @param string $nouvelle_email Nouvelle adresse email
      * @return bool True si la mise à jour réussit, sinon false
      */
-    public function updateEmail($id_utilisateur, $nouvelle_email){
+    public function updateEmail($id_utilisateur, $nouvelle_email)
+    {
         try {
             // Prépare la requête
             $stmt = $this->bd->prepare("UPDATE utilisateur SET mail = :nouvelle_email WHERE id_utilisateur = :id_utilisateur");
@@ -2274,7 +2351,8 @@ class Model
      * @param string $nouveau_mot_de_passe Nouveau mot de passe (non haché)
      * @return bool True si la mise à jour réussit, sinon false
      */
-    public function updatePassword($id_utilisateur, $nouveau_mot_de_passe){
+    public function updatePassword($id_utilisateur, $nouveau_mot_de_passe)
+    {
         try {
             // Hash le nouveau mot de passe
             $hashedPassword = password_hash($nouveau_mot_de_passe, PASSWORD_DEFAULT);
@@ -2303,7 +2381,8 @@ class Model
      * @param string $nouvelle_societe Nouvelle société
      * @return bool True si la mise à jour réussit, sinon false
      */
-    public function updateSociete($id_utilisateur, $nouvelle_societe){
+    public function updateSociete($id_utilisateur, $nouvelle_societe)
+    {
         try {
             // Vérifie si une société existe déjà pour l'utilisateur
             $societeExistante = $this->getClientById($id_utilisateur);
@@ -2343,7 +2422,8 @@ class Model
      * @param string $nouveau_linkedin Nouveau profil LinkedIn
      * @return bool True si la mise à jour réussit, sinon false
      */
-    public function updateLinkedIn($id_utilisateur, $nouveau_linkedin){
+    public function updateLinkedIn($id_utilisateur, $nouveau_linkedin)
+    {
         try {
             // Met à jour LinkedIn
             $stmtUpdate = $this->bd->prepare("UPDATE formateur SET linkedin = :nouveau_linkedin WHERE id_utilisateur = :id_utilisateur");
@@ -2368,7 +2448,8 @@ class Model
      * @param string $nouveau_cv Nouveau CV
      * @return bool True si la mise à jour réussit, sinon false
      */
-    public function updateCV($id_utilisateur, $nouveau_cv){
+    public function updateCV($id_utilisateur, $nouveau_cv)
+    {
         try {
             // Met à jour le CV
             $stmtUpdate = $this->bd->prepare("UPDATE formateur SET cv = :nouveau_cv WHERE id_utilisateur = :id_utilisateur");
@@ -2388,5 +2469,5 @@ class Model
 
 
 
-    
+
 }

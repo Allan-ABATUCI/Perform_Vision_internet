@@ -278,7 +278,8 @@ nav {
 	flex-direction: column;
 	font-family: 'Montserrat', sans-serif;
 	height: 100vh;
-	margin: -20px 0 50px;
+  
+  
 }
 
 h1 {
@@ -311,8 +312,8 @@ a {
 
 .button {
 	border-radius: 30px;
-	border: 1px solid #2b32ff;
-	background-color: #2b32ff;
+	border: 1px solid #2b32ff00;
+	background-color: #2eb2efb3;
 	color: #FFFFFF;
 	font-size: 12px;
 	font-weight: bold;
@@ -425,9 +426,7 @@ input {
 }
 
 .overlay {
-	background: #41b3ff;
-	background: -webkit-linear-gradient(to right, #2b39ff, #41b3ff);
-	background: linear-gradient(to right, #2b39ff, #41b3ff);
+	background: #54C0F2;
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: 0 0;
@@ -612,4 +611,10 @@ Section d'accueil /////////////////////////////////////////////////
   /* Ajoutez d'autres propriétés de style si nécessaire */
    /* Ajustez selon la largeur de votre sidebar */
   transition: margin-left 1s ease; /* Ajoutez une transition pour une animation fluide */
+}
+
+.background{
+  height: 100%;
+  width: 100%;
+background-image: linear-gradient(#20a4fc, #5caee477);
 }
