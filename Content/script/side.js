@@ -3,6 +3,7 @@ let closeBtn = document.querySelector("#btn");
 let log =document.querySelector(".profile");
 let content = document.querySelector('.section');
 const leftColumn = document.querySelector('.container');
+
 // Vérifiez si les éléments existent avant d'ajouter des écouteurs d'événements
 if (closeBtn) {
     closeBtn.addEventListener("click", () => {
@@ -12,11 +13,11 @@ if (closeBtn) {
 		toggleSidebar()
     });
 
-    searchBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("open");
-        menuBtnChange();
-		toggleSidebar()
-    });
+    // searchBtn.addEventListener("click", () => {
+    //     sidebar.classList.toggle("open");
+    //     menuBtnChange();
+	// 	toggleSidebar()
+    // });
 }
 
 function toggleSidebar() {
@@ -42,3 +43,8 @@ function menuBtnChange() {
         closeBtn.classList.replace("bx-menu-alt-right", "bx-menu");
     }
 }
+
+document.getElementById('log_out').addEventListener('click',function(){
+    console.log("click");
+    
+})

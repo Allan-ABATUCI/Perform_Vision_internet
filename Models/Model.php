@@ -232,7 +232,7 @@ class Model
             $stmt = $this->bd->prepare("SELECT * FROM utilisateur WHERE mail = :mail");
 
             // Bind
-            $stmt->bindParam(':mail', $mail);
+            $stmt->bindParam(':mail', $mail, PDO::PARAM_STR);
 
             // Execute
             $stmt->execute();

@@ -70,7 +70,10 @@
                 echo '</div>';
                 ?>
             </div>
-            <i class='bx bx-log-out' id="log_out"></i>
+            <i class='bx bx-log-out' id="log_out" <?php
+            
+            session_unset();
+            session_destroy(); ?>></i>
         </li>
 
       </ul>
