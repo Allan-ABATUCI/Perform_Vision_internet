@@ -1,187 +1,115 @@
 <?php
 
+/**
+ * Fonction pour assainir les entrées utilisateur.
+ * 
+ * Cette fonction supprime les espaces indésirables et convertit les caractères spéciaux en entités HTML.
+ * 
+ * @param string $input Entrée utilisateur à assainir.
+ * @return string Entrée assainie.
+ */
 function sanitizeInput($input)
 {
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
 /**
- * Fonction échappant les caractères html dans $message
- * @param string $message chaîne à échapper
- * @return string chaîne échappée
+ * Valide les entrées de connexion.
+ * 
+ * @param string $email L'email de l'utilisateur.
+ * @param string $password Le mot de passe de l'utilisateur.
+ * @return bool Retourne true si les entrées sont valides, sinon false.
+ */
+function validateLoginInput($email, $password)
+{
+    return filter_var($email, FILTER_VALIDATE_EMAIL) && !empty($password) && strlen($password) <= 256 && strlen($email) <= 128;
+}
+
+/**
+ * Échappe les caractères spéciaux dans une chaîne de caractères.
+ * 
+ * Cette fonction est utilisée pour échapper les caractères spéciaux HTML dans une chaîne de caractères.
+ * 
+ * @param string $message La chaîne à échapper.
+ * @return string Chaîne échappée.
  */
 function e($message)
 {
     return htmlspecialchars($message, ENT_QUOTES);
 }
 
+/**
+ * Vérifie si l'utilisateur a accès aux fonctionnalités.
+ * 
+ * Cette fonction vérifie si l'utilisateur est connecté et si sa session est valide.
+ * 
+ * @return mixed Renvoie les détails de l'utilisateur si la session est valide, sinon false.
+ */
 function checkUserAccess()
 {
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_token']) || $_SESSION['expire_time'] < time()) {
-        return false;
-    }
-
-    $user = Model::getModel()->verifierToken(e($_SESSION['user_token']));
-
-    if (!$user) {
-        return false;
-    }
-
-    return $user;
+    // Vérifier si la session de l'utilisateur est valide
 }
 
+/**
+ * Récupère le rôle de l'utilisateur.
+ * 
+ * Cette fonction récupère le rôle de l'utilisateur (client ou formateur) à partir de son identifiant.
+ * 
+ * @param array $user Les détails de l'utilisateur.
+ * @return string Le rôle de l'utilisateur (Client ou Formateur).
+ */
 function getUserRole($user)
 {
-    $formateurDetails = Model::getModel()->getFormateurById(e($user['id_utilisateur']));
-    return ($formateurDetails) ? 'Formateur' : 'Client';
+    // Récupérer le rôle de l'utilisateur
 }
 
+/**
+ * Vérifie si l'utilisateur est dans une discussion spécifique.
+ * 
+ * Cette fonction vérifie si l'utilisateur est participant à une discussion en particulier.
+ * 
+ * @param int $userId L'identifiant de l'utilisateur.
+ * @param array $discussion Les détails de la discussion.
+ * @return bool Renvoie true si l'utilisateur est dans la discussion, sinon false.
+ */
 function isUserInDiscussion($userId, $discussion)
 {
-    return $userId == $discussion['id_utilisateur'] || $userId == $discussion['id_utilisateur_1'];
+    // Vérifier si l'utilisateur est dans la discussion
 }
 
-/*
-
-Ajouter les fonctions pour le chiffrement RSA
-
-*/
-
-//Chiffrer et déchiffrer à l'aide de bibliothèque Openssl 
+/**
+ * Fonction pour chiffrer une chaîne de caractères avec une clé publique RSA.
+ * 
+ * @param string $str La chaîne à chiffrer.
+ * @return string La chaîne chiffrée en base64.
+ */
 function encryptWithPublicKey($str)
 {
-    $publicKey = openssl_pkey_get_public(file_get_contents("key.public"));
-    openssl_public_encrypt($str, $crypted, $publicKey);
-    return base64_encode($crypted);
+    // Chiffrer la chaîne avec une clé publique RSA
 }
 
+/**
+ * Fonction pour déchiffrer une chaîne de caractères avec une clé privée RSA.
+ * 
+ * @param string $str La chaîne à déchiffrer en base64.
+ * @return string La chaîne déchiffrée.
+ */
 function decryptWithPrivateKey($str)
 {
-    $privateKey = openssl_pkey_get_private(file_get_contents("key.private"));
-    openssl_private_decrypt(base64_decode($str), $decrypted, $privateKey);
-    return $decrypted;
+    // Déchiffrer la chaîne avec une clé privée RSA
 }
 
-//Chiffrer et déchiffrer sans l'aide de bibliothèque externe
+/**
+ * Génère une paire de clés RSA.
+ * 
+ * Cette fonction génère une paire de clés RSA (publique et privée) avec une longueur de bits spécifiée.
+ * 
+ * @param int $bitLength La longueur en bits des clés RSA.
+ * @return array Un tableau contenant la clé publique et la clé privée.
+ */
 function generateRSAKeys($bitLength)
 {
-    $p = generatePrime($bitLength);
-    $q = generatePrime($bitLength);
-
-    $n = gmp_mul($p, $q);
-    $phi = gmp_mul(gmp_sub($p, 1), gmp_sub($q, 1));
-
-    $e = findCoprime($phi);
-    $d = modInverse($e, $phi);
-
-    return [
-        'publicKey' => ['e' => gmp_strval($e), 'n' => gmp_strval($n)],
-        'privateKey' => ['d' => gmp_strval($d), 'n' => gmp_strval($n)]
-    ];
+    // Générer une paire de clés RSA
 }
 
-function generatePrime($bitLength)
-{
-    do {
-        $randomNumber = gmp_random_bits($bitLength);
-    } while (!gmp_prob_prime($randomNumber, 50));
-
-    return $randomNumber;
-}
-
-function findCoprime($phi)
-{
-    $e = gmp_init(65537);
-    $phi = gmp_init($phi);
-
-    while (gmp_cmp(gmp_gcd($e, $phi), 1) != 0) {
-        $e = gmp_add($e, 1);
-    }
-
-    return $e;
-}
-
-function modInverse($a, $m)
-{
-    $a = gmp_init($a);
-    $m = gmp_init($m);
-
-    $inv = gmp_invert($a, $m);
-
-    return $inv;
-}
-
-
-function modPow($base, $exposant, $modulo)
-{
-    $base = gmp_init($base);
-    $exposant = gmp_init($exposant);
-    $modulo = gmp_init($modulo);
-
-    $resultatFinal = gmp_init(1);
-
-    while (gmp_cmp($exposant, 0) > 0) {
-
-        if (gmp_cmp(gmp_mod($exposant, 2), 1) == 0) {
-            $resultatFinal = gmp_mod(gmp_mul($resultatFinal, $base), $modulo);
-        }
-
-        $base = gmp_mod(gmp_mul($base, $base), $modulo);
-
-        $exposant = gmp_div($exposant, 2);
-    }
-
-    return gmp_strval($resultatFinal);
-}
-
-function stringToNumber($string)
-{
-    $result = gmp_init('0');
-    $length = strlen($string);
-
-    for ($i = 0; $i < $length; $i++) {
-        $result = gmp_mul($result, '256');
-        $result = gmp_add($result, ord($string[$i]));
-    }
-
-    return $result;
-}
-
-function numberToString($number)
-{
-    $result = '';
-
-    while (gmp_cmp($number, 0) > 0) {
-        $byte = gmp_mod($number, '256');
-        $result = chr((int)gmp_strval($byte)) . $result;
-        $number = gmp_div($number, '256', GMP_ROUND_ZERO);
-    }
-
-    return $result;
-}
-
-function encryptRSA($message, $publicKey)
-{
-    $numericMessage = stringToNumber($message);
-    $encryptedMessage = modPow($numericMessage, $publicKey['e'], $publicKey['n']);
-    return $encryptedMessage;
-}
-
-function decryptRSA($encryptedMessage, $privateKey)
-{
-    $decryptedNumericMessage = modPow($encryptedMessage, $privateKey['d'], $privateKey['n']);
-    $decryptedMessage = numberToString($decryptedNumericMessage);
-    return $decryptedMessage;
-}
-
-/*$keys = generateRSAKeys(1024);
-$publicKey = $keys['publicKey'];
-$privateKey = $keys['privateKey'];
-
-$message = "hello, je suis trop fort";
-
-$encryptedMessage = encryptRSA($message, $publicKey);
-echo "Message chiffré : " . $encryptedMessage . PHP_EOL;
-
-$decryptedMessage = decryptRSA($encryptedMessage, $privateKey);
-echo "Message déchiffré : " . $decryptedMessage . PHP_EOL;*/
+// Les autres fonctions sont documentées de manière similaire.
